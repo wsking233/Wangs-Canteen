@@ -22,7 +22,10 @@ test('low stock shortcut excludes disabled food and clears after restocking', as
   await page.getByRole('link', { name: '看看该补什么', exact: true }).click()
   await expect(page.getByLabel('食物：炸鸡', { exact: true })).toBeVisible()
   await expect(page.getByLabel('食物：意面', { exact: true })).toHaveCount(0)
-  await page.getByLabel('食物：炸鸡', { exact: true }).getByRole('button', { name: '补货', exact: true }).click()
+  await page
+    .getByLabel('食物：炸鸡', { exact: true })
+    .getByRole('button', { name: '补货', exact: true })
+    .click()
   await page.getByLabel('补货数量（块）', { exact: true }).fill('1')
   await page.getByRole('button', { name: '确认补货', exact: true }).click()
   await expect(page.getByRole('dialog')).toBeHidden()

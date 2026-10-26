@@ -1,8 +1,14 @@
 import { test, expect, seed, readPantry, examplePantry } from './fixtures'
 
-test('a storage failure keeps the editor open and never reports a successful stock update', async ({ page }) => {
+test('a storage failure keeps the editor open and never reports a successful stock update', async ({
+  page,
+}) => {
   await seed(page, undefined, 'inventory')
-  await page.evaluate(() => { Storage.prototype.setItem = () => { throw new Error('存储空间不足') } })
+  await page.evaluate(() => {
+    Storage.prototype.setItem = () => {
+      throw new Error('存储空间不足')
+    }
+  })
   await page.getByRole('button', { name: '添加食物', exact: true }).click()
   await page.getByLabel('食物名称', { exact: true }).fill('无法保存的饺子')
   await page.getByLabel('剩余数量', { exact: true }).fill('2')

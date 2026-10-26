@@ -7,7 +7,10 @@ test('all app views fit phone, tablet and desktop widths', async ({ page }) => {
     for (const route of ['today', 'inventory', 'meals', 'history', 'data']) {
       await page.goto(`#${route}`)
       await expect(page.locator('main h1')).toBeVisible()
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${route} at ${width}px`).toBe(true)
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+        `${route} at ${width}px`,
+      ).toBe(true)
     }
   }
 })

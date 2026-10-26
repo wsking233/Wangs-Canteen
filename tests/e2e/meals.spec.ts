@@ -1,6 +1,8 @@
 import { test, expect, seed, readPantry } from './fixtures'
 
-test('recommendation, actual portions, history and undo keep stock consistent', async ({ page }) => {
+test('recommendation, actual portions, history and undo keep stock consistent', async ({
+  page,
+}) => {
   await seed(page, undefined, 'today/dinner')
   const recommendation = page.getByLabel('今日推荐', { exact: true })
   await expect(recommendation).toContainText('炸鸡配意面')
@@ -12,7 +14,7 @@ test('recommendation, actual portions, history and undo keep stock consistent', 
   await page.getByRole('button', { name: '确认开饭', exact: true }).click()
   await expect(page.getByRole('dialog')).toBeHidden()
   let data = await readPantry(page)
-  expect(data.foods.map(food => food.quantity)).toEqual([6, 4.5])
+  expect(data.foods.map((food) => food.quantity)).toEqual([6, 4.5])
   expect(data.records).toHaveLength(1)
   expect(data.combinations[0].items[1].quantity).toBe(1)
   await page.getByRole('link', { name: '用餐记录', exact: true }).click()
@@ -23,7 +25,9 @@ test('recommendation, actual portions, history and undo keep stock consistent', 
   await page.getByRole('button', { name: '确认撤销并返还', exact: true }).click()
   await expect(record).toContainText('已撤销')
   data = await readPantry(page)
-  expect(data.foods.map(food => food.quantity)).toEqual([8, 5])
+  expect(data.foods.map((food) => food.quantity)).toEqual([8, 5])
   expect(data.records[0].cancelledAt).toBeTruthy()
-  await expect(page.getByRole('button', { name: '撤销这顿：炸鸡配意面', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '撤销这顿：炸鸡配意面', exact: true })).toHaveCount(
+    0,
+  )
 })

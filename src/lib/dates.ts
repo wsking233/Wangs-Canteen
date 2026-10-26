@@ -6,6 +6,7 @@ export function toLocalInput(iso: string): string {
 export function fromLocalInput(input: string, previous?: string): string {
   if (previous && input === toLocalInput(previous)) return previous
   const date = new Date(input)
-  if (!Number.isFinite(date.getTime()) || toLocalInput(date.toISOString()) !== input) throw new Error('用餐时间不正确，请重新选择日期和时间。')
+  if (!Number.isFinite(date.getTime()) || toLocalInput(date.toISOString()) !== input)
+    throw new Error('用餐时间不正确，请重新选择日期和时间。')
   return date.toISOString()
 }

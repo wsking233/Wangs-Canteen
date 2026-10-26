@@ -16,12 +16,14 @@ npm run dev
 
 ## 检查与构建
 
+修改源码后先执行 `npm run format` 统一格式，再运行检查。
+
 ```bash
 npm run check
 npm run preview
 ```
 
-`check` 执行 Oxlint、库存领域单测、TypeScript 和生产构建。`preview` 预览已构建的产物。
+`check` 执行格式检查、Oxlint、严格类型检查、领域单测和生产构建。`preview` 预览已构建的产物。
 
 关键生产页面的浏览器回归已固化在 `tests/e2e/`：
 

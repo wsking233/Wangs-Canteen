@@ -1,6 +1,8 @@
 import { test, expect, seed, readPantry, examplePantry } from './fixtures'
 
-test('a one-time meal requires confirmation and never creates a saved combination', async ({ page }) => {
+test('a one-time meal requires confirmation and never creates a saved combination', async ({
+  page,
+}) => {
   const data = examplePantry()
   data.combinations = []
   await seed(page, data)
@@ -20,7 +22,7 @@ test('a one-time meal requires confirmation and never creates a saved combinatio
   await expect(page.getByRole('dialog')).toBeHidden()
   const saved = await readPantry(page)
   expect(saved.combinations).toHaveLength(0)
-  expect(saved.foods.map(food => food.quantity)).toEqual([6, 4.75])
+  expect(saved.foods.map((food) => food.quantity)).toEqual([6, 4.75])
   expect(saved.records).toHaveLength(1)
   expect(saved.records[0].combinationId).toBe('')
   await page.getByRole('link', { name: '用餐记录', exact: true }).click()

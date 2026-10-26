@@ -8,10 +8,12 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "check": "npm run lint && npm run test:types && npm run test && npm run build",
+    "check": "npm run format:check && npm run lint && npm run test:types && npm run test && npm run build",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "test:types": "tsc -p tsconfig.tests.json",
-    "test:e2e": "npm run build && playwright test"
+    "test:e2e": "npm run build && playwright test",
+    "format": "prettier --write src tests \"*.ts\" \"tsconfig*.json\" package.json index.html .github/workflows",
+    "format:check": "prettier --check src tests \"*.ts\" \"tsconfig*.json\" package.json index.html .github/workflows"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -33,6 +35,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "oxlint": "^1.88.0",
+    "prettier": "^3.9.10",
     "typescript": "~6.0.3",
     "vite": "^8.3.4"
   },

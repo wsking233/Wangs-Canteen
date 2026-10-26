@@ -1,6 +1,8 @@
 import { test, expect, readPantry } from './fixtures'
 
-test('inventory quantities persist and restock exactly; deleting requires confirmation', async ({ page }) => {
+test('inventory quantities persist and restock exactly; deleting requires confirmation', async ({
+  page,
+}) => {
   await page.goto('#inventory')
   await page.getByRole('button', { name: '添加食物', exact: true }).click()
   await page.getByLabel('食物名称', { exact: true }).fill('饺子')

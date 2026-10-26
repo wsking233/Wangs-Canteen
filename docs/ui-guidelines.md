@@ -27,7 +27,7 @@
 ## 文件职责
 
 - `src/index.css`：Tailwind 入口、语义色、字体与圆角，是调整主题的入口。
-- `src/components/ui/`：官方基础组件，尽量保留原有 API 与变体。
+- `src/components/ui/`：官方基础组件，尽量保留原有 API 与变体；源码格式统一使用项目 Prettier 配置。
 - `src/components/`：未来复用的项目组合组件。
 - `src/lib/utils.ts`：`cn()` 合并条件类名与 Tailwind 冲突类。
 - `components.json`：组件生成器配置。

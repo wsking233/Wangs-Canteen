@@ -12,3 +12,5 @@
 - PR 执行检查；推送 main 后由 GitHub Actions 自动构建并部署 GitHub Pages。
 
 - 修改业务流程后运行 npm run check 与相关 Playwright 测试；完整浏览器命令 npm run test:e2e。CI 在生产构建基础上运行 npx playwright test，失败阻止 Pages 发布。
+
+- 源码使用 Prettier；修改后先 npm run format，再 npm run check。前端、构建配置与测试均开启严格类型检查。旧版本库存解析只用于迁移，所有写入只走完整 Pantry 快照接口。
