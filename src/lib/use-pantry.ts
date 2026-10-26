@@ -3,10 +3,11 @@ import { PANTRY_KEY, parsePantry, savePantry, type Pantry } from './pantry'
 
 interface Snapshot { pantry: Pantry; raw: string | null; error: string }
 function read(): Snapshot {
+  let raw: string | null = null
   try {
-    const raw = localStorage.getItem(PANTRY_KEY)
+    raw = localStorage.getItem(PANTRY_KEY)
     return { pantry: parsePantry(raw), raw, error: '' }
-  } catch { return { pantry: { version: 3, foods: [], combinations: [], records: [] }, raw: null, error: '无法读取本机数据，可能是浏览器存储不可用或已有数据损坏。原数据未被覆盖，请保留站点数据并重新读取。' } }
+  } catch { return { pantry: { version: 3, foods: [], combinations: [], records: [] }, raw, error: '无法读取本机数据，可能是浏览器存储不可用或已有数据损坏。原数据未被覆盖，请保留站点数据并重新读取。' } }
 }
 
 export function usePantry() {
@@ -30,9 +31,9 @@ export function usePantry() {
     return () => window.removeEventListener('storage', sync)
   }, [reload])
 
-  function commit(update: (pantry: Pantry) => Pantry, feedback: string): boolean {
+  function write(update: (pantry: Pantry) => Pantry, feedback: string, recovery = false): boolean {
     try {
-      if (current.current.error) throw new Error('请先恢复读取数据，再进行修改。')
+      if (current.current.error && !recovery) throw new Error('请先恢复读取数据，再进行修改。')
       const pantry = update(current.current.pantry)
       const raw = savePantry(localStorage, current.current.raw, pantry)
       const next = { pantry, raw, error: '' }
@@ -43,6 +44,6 @@ export function usePantry() {
       return true
     } catch (error) { setMessage(''); setError(error instanceof Error ? error.message : '保存失败，请检查浏览器存储权限。'); return false }
   }
-  return { pantry: snapshot.pantry, blocked: Boolean(snapshot.error), error: snapshot.error || error, message, revision, reload, commit, clearError: () => setError('') }
+  return { pantry: snapshot.pantry, blocked: Boolean(snapshot.error), error: snapshot.error || error, message, revision, reload, commit: (update: (pantry: Pantry) => Pantry, feedback: string) => write(update, feedback), restore: (pantry: Pantry) => write(() => pantry, '备份已导入，本机数据已替换。', true), clearError: () => setError('') }
 }
 export type PantryStore = ReturnType<typeof usePantry>
