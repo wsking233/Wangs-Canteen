@@ -10,3 +10,5 @@
 
 - 用户已授权统一 UI 基础：采用 shadcn/ui New York、Tailwind CSS v4、Lucide；优先复用现有官方组件，避免引入多套 UI 风格。
 - PR 执行检查；推送 main 后由 GitHub Actions 自动构建并部署 GitHub Pages。
+
+- 修改业务流程后运行 npm run check 与相关 Playwright 测试；完整浏览器命令 npm run test:e2e。CI 在生产构建基础上运行 npx playwright test，失败阻止 Pages 发布。

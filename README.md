@@ -23,6 +23,15 @@ npm run preview
 
 `check` 执行 Oxlint、库存领域单测、TypeScript 和生产构建。`preview` 预览已构建的产物。
 
+关键生产页面的浏览器回归已固化在 `tests/e2e/`：
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+```
+
+测试使用独立浏览器上下文和生产预览端口 4174，覆盖库存、常用搭配、推荐/开饭/撤销、备份恢复、并发保存、存储失败、主题和四种宽度。若环境已有 Chromium，可设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium`。CI 自动安装 Chromium 并在上传 Pages 产物前运行这些测试；失败时保留诊断文件 7 天。
+
 ## 项目文档
 
 - [第一阶段目标与验收标准](docs/phase-one.md)
@@ -56,7 +65,7 @@ npm run preview
 
 仓库：`wsking233/Wangs-Canteen`；正式发布分支：`main`。
 
-- PR：自动执行 `npm ci --include=dev`、代码检查、库存领域单测、TypeScript 和生产构建，不发布。
+- PR：自动执行 `npm ci --include=dev`、代码检查、领域单测、TypeScript、生产构建和浏览器回归，不发布。
 - 推送或合并到 `main`：检查通过后自动上传 `dist/` 并部署 Pages。
 - 可在 Actions 中手动运行 Deploy to GitHub Pages；只有 main 分支可以部署。
 - 检查或构建失败将阻止部署，已上线版本保留。
