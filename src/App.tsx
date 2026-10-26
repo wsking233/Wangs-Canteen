@@ -37,7 +37,7 @@ function App() {
         <section className="max-w-2xl space-y-5">
           <Badge variant="secondary">第一阶段 · 前端基础</Badge>
           <h1 className="text-3xl leading-tight font-semibold tracking-tight sm:text-5xl">让每个界面，<br />拥有同一种温度。</h1>
-          <p className="text-base leading-7 text-muted-foreground">温暖、清晰、轻量。这是项目的 UI 基础展示页，用来验证统一的颜色、组件与交互；业务功能将在后续确定。</p>
+          <p className="text-base leading-7 text-muted-foreground">自然、清爽、轻量。这是项目的 UI 基础展示页，用来验证统一的颜色、组件与交互；业务功能将在后续确定。</p>
           <Button asChild><a href="#components">查看基础组件 <ArrowRight aria-hidden="true" /></a></Button>
         </section>
         <Separator />
@@ -66,10 +66,10 @@ function App() {
               </CardContent>
             </Card>
             <Card id="foundations">
-              <CardHeader><CardTitle>温暖而克制的基础</CardTitle><CardDescription>通过共享设计变量统一风格，避免逐页定制。</CardDescription></CardHeader>
+              <CardHeader><CardTitle>清爽而克制的基础</CardTitle><CardDescription>通过共享设计变量统一风格，避免逐页定制。</CardDescription></CardHeader>
               <CardContent className="space-y-5">
                 <div className="grid grid-cols-3 gap-3">{[
-                  ['bg-primary', '陶土橙'], ['bg-secondary', '暖中性色'], ['bg-card', '卡片底色'],
+                  ['bg-primary', '松绿色'], ['bg-secondary', '鼠尾草绿'], ['bg-background', '奶油白'],
                 ].map(([color, label]) => <div key={label} className="space-y-2"><div className={`${color} h-14 rounded-lg border`} /><p className="text-xs text-muted-foreground">{label}</p></div>)}</div>
                 <Separator />
                 <ul className="space-y-3 text-sm text-muted-foreground">{['统一圆角与 4px 间距基准', '支持浅色与深色主题', '移动端单列，宽屏双列', '键盘焦点、弹窗焦点管理与表单标签'].map((item) => <li key={item} className="flex items-center gap-2"><Check aria-hidden="true" className="size-4 shrink-0 text-primary" />{item}</li>)}</ul>
