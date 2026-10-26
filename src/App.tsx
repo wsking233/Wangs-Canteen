@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
-import { CookingPot, Moon, Sun, RefreshCw, PackageOpen, UtensilsCrossed, Sparkles, History, Database } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { CookingPot, Moon, Sun, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AppNavigation } from '@/components/app-navigation'
+import { PAGE_TITLES, parseRoute } from '@/lib/navigation'
 import { InventoryPage } from '@/components/inventory-page'
 import { CombinationsPage } from '@/components/combinations-page'
 import { TodayPage } from '@/components/today-page'
@@ -13,19 +15,31 @@ function App() {
   const store = usePantry()
   const theme = useTheme()
   const { dark } = theme
-  function readPage() { return location.hash.slice(1).split('/')[0] || 'today' }
-  const [page, setPage] = useState(readPage)
-  const [requestedId, setRequestedId] = useState(() => location.hash.split('/')[1])
+  const [route, setRoute] = useState(() => parseRoute(location.hash))
+  const { page, itemId: requestedId } = route
+  const main = useRef<HTMLElement>(null)
+  const initial = useRef(true)
   useEffect(() => {
-    function navigate() { const next = readPage(); if (['today', 'inventory', 'meals', 'history', 'data'].includes(next)) { setPage(next); setRequestedId(location.hash.split('/')[1]) } }
+    function navigate() { if (location.hash !== '#main') setRoute(parseRoute(location.hash)) }
     window.addEventListener('hashchange', navigate)
     return () => window.removeEventListener('hashchange', navigate)
   }, [])
+  useEffect(() => {
+    document.title = `${PAGE_TITLES[page]} · 小王食堂`
+    if (initial.current) { initial.current = false; return }
+    const frame = requestAnimationFrame(() => {
+      const heading = main.current?.querySelector('h1')
+      heading?.setAttribute('tabindex', '-1')
+      heading?.focus({ preventScroll: true })
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [page, requestedId])
   return <>
     <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-background focus:p-4">跳转到主要内容</a>
     <header className="border-b bg-card"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-5 sm:px-8"><a href="#today" className="flex items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-ring"><span className="rounded-xl bg-primary p-2.5 text-primary-foreground"><CookingPot aria-hidden="true" className="size-5" /></span><span className="font-semibold">小王食堂<span className="block text-xs font-normal text-muted-foreground">Wang’s Canteen</span></span></a><Button variant="outline" size="icon" aria-label={dark ? '切换为浅色主题' : '切换为深色主题'} onClick={theme.toggle}>{dark ? <Sun /> : <Moon />}</Button></div></header>
-    <div className="mx-auto max-w-5xl px-5 pt-6 sm:px-8"><nav aria-label="主导航" className="flex flex-wrap gap-1 sm:gap-2">{[['today', '今天吃什么', Sparkles], ['inventory', '我的库存', PackageOpen], ['meals', '常用搭配', UtensilsCrossed], ['history', '用餐记录', History], ['data', '我的数据', Database]].map(([id, label, Icon]) => <Button key={String(id)} asChild size="sm" variant={page === id ? 'secondary' : 'ghost'}><a href={`#${id}`} onClick={event => { if (store.pending) event.preventDefault() }} aria-disabled={store.pending || undefined} aria-current={page === id ? 'page' : undefined}><Icon aria-hidden="true" />{String(label)}</a></Button>)}</nav></div>
-    <main id="main" tabIndex={-1} className="mx-auto max-w-5xl space-y-7 px-5 py-8 sm:px-8 sm:py-10">
+    <AppNavigation page={page} pending={store.pending} />
+    <main ref={main} id="main" tabIndex={-1} className="mx-auto max-w-5xl space-y-7 px-5 pt-8 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-8 sm:pt-10 sm:pb-10">
       {store.error && <div role="alert" className="space-y-3 rounded-lg border border-destructive/40 bg-card p-4"><p className="text-sm text-destructive">{store.error}</p><Button variant="outline" size="sm" disabled={store.pending} onClick={store.reload}><RefreshCw />重新读取</Button></div>}
       {theme.notice && <p role="status" className="text-sm text-muted-foreground">{theme.notice}</p>}
       <p role="status" className="sr-only">{store.message}</p>{store.message && <p aria-hidden="true" className="text-sm text-primary">{store.message}</p>}
