@@ -1,4 +1,4 @@
-import { INVENTORY_KEY, parseInventory, validateFood, validQuantity, type Food } from './inventory.ts'
+import { INVENTORY_KEY, parseInventory, validateFood, validQuantity, addStock, type Food } from './inventory.ts'
 
 export { INVENTORY_KEY as PANTRY_KEY }
 export interface MealItem { foodId: string; quantity: number; unit: string }
@@ -8,12 +8,14 @@ export interface MealRecord {
   combinationId: string
   name: string
   eatenAt: string
+  cancelledAt?: string
   items: { foodId: string; name: string; quantity: number; unit: string }[]
 }
 export interface Pantry { version: 3; foods: Food[]; combinations: Combination[]; records: MealRecord[] }
 
 export function validateRecord(record: MealRecord): void {
   if (!record || typeof record.eatenAt !== 'string' || !Number.isFinite(Date.parse(record.eatenAt)) || typeof record.combinationId !== 'string') throw new Error('用餐记录格式不正确。')
+  if (record.cancelledAt !== undefined && (typeof record.cancelledAt !== 'string' || !Number.isFinite(Date.parse(record.cancelledAt)))) throw new Error('撤销时间格式不正确。')
   validateCombination({ id: record.id, name: record.name, items: record.items })
   record.items.forEach(item => { if (typeof item.name !== 'string' || !item.name.trim() || item.name.length > 40) throw new Error('用餐记录缺少食物名称。') })
 }
@@ -67,7 +69,12 @@ export function chooseMeal(pantry: Pantry, previousId?: string, random: () => nu
   const available = pantry.combinations.filter(meal => !availability(meal, pantry.foods).length)
   const alternatives = available.filter(meal => meal.id !== previousId)
   const candidates = alternatives.length ? alternatives : available
-  return candidates.length ? candidates[Math.min(candidates.length - 1, Math.max(0, Math.floor(random() * candidates.length)))] : null
+  if (!candidates.length) return null
+  const recent = pantry.records.filter(record => !record.cancelledAt).sort((a, b) => Date.parse(b.eatenAt) - Date.parse(a.eatenAt)).slice(0, 3)
+  const weights = candidates.map(meal => 1 / (1 + recent.reduce((penalty, record) => penalty + (record.combinationId === meal.id ? 3 : 0) + record.items.filter(item => meal.items.some(part => part.foodId === item.foodId)).length * 0.5, 0)))
+  let position = random() * weights.reduce((sum, weight) => sum + weight, 0)
+  for (let i = 0; i < candidates.length; i++) { position -= weights[i]; if (position < 0) return candidates[i] }
+  return candidates[candidates.length - 1]
 }
 
 export function recordMeal(pantry: Pantry, meal: Combination, items: MealItem[], recordId: string, eatenAt: string): Pantry {
@@ -82,4 +89,25 @@ export function recordMeal(pantry: Pantry, meal: Combination, items: MealItem[],
     const item = items.find(item => item.foodId === food.id)
     return item ? { ...food, quantity: (Math.round(food.quantity * 100) - Math.round(item.quantity * 100)) / 100 } : food
   }), records: [record, ...pantry.records] }
+}
+
+export function cancelMeal(pantry: Pantry, recordId: string, cancelledAt: string): Pantry {
+  const record = pantry.records.find(record => record.id === recordId)
+  if (!record) throw new Error('用餐记录已不存在。')
+  if (record.cancelledAt) throw new Error('这顿饭已撤销，不会再次返还库存。')
+  const cancelled = { ...record, cancelledAt }
+  validateRecord(cancelled)
+  const foods = [...pantry.foods]
+  for (const item of record.items) {
+    const index = foods.findIndex(food => food.id === item.foodId)
+    if (index >= 0) {
+      if (foods[index].unit !== item.unit) throw new Error(`${item.name}的库存单位已从${item.unit}改为${foods[index].unit}，请先改回原单位再撤销。`)
+      foods[index] = addStock(foods[index], item.quantity)
+    } else {
+      const restored: Food = { id: item.foodId, name: item.name, unit: item.unit, quantity: item.quantity, enabled: true, note: '由撤销用餐记录恢复' }
+      validateFood(restored)
+      foods.push(restored)
+    }
+  }
+  return { ...pantry, foods, records: pantry.records.map(item => item.id === recordId ? cancelled : item) }
 }

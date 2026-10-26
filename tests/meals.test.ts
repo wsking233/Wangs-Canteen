@@ -37,3 +37,11 @@ test('recorded names and units survive later inventory edits or deletion',()=>{
  const modified={...result,foods:[]}
  assert.equal(parsePantry(JSON.stringify(modified)).records[0].items[0].name,'炸鸡')
 })
+
+test('recently eaten combinations receive lower weight without being excluded',()=>{
+ const other={...meal,id:'other',name:'意面',items:[meal.items[1]]}
+ const eaten=recordMeal({...pantry,combinations:[meal,other]},meal,meal.items,'r',now)
+ // A weighted draw at 0.3 chooses the less repetitive option, whereas uniform would choose the first.
+ assert.equal(chooseMeal(eaten,undefined,()=>0.3)?.id,'other')
+ assert.equal(chooseMeal(eaten,undefined,()=>0)?.id,'dinner')
+})

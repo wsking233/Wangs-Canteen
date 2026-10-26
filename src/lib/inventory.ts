@@ -16,7 +16,9 @@ export interface Inventory {
 }
 
 export function validQuantity(value: number): boolean {
-  return Number.isFinite(value) && value >= 0 && value <= MAX_QUANTITY && Math.abs(value * 100 - Math.round(value * 100)) < 0.000001
+  const scaled = value * 100
+  const rounded = Math.round(scaled)
+  return Number.isFinite(value) && value >= 0 && value <= MAX_QUANTITY && (value === 0 || rounded >= 1) && Math.abs(scaled - rounded) <= Number.EPSILON * Math.max(1, Math.abs(scaled)) * 4
 }
 
 export function validateFood(food: Food): void {

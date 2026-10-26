@@ -6,7 +6,7 @@ const chicken: Food = { id: 'chicken', name: '炸鸡', unit: '块', quantity: 8,
 
 test('accepts fractional stock and rejects negative, non-finite, excessive or over-precision amounts', () => {
   for (const value of [0, 0.5, 0.01, 1_000_000]) assert.equal(validQuantity(value), true)
-  for (const value of [-1, NaN, Infinity, 1_000_001, 0.001]) assert.equal(validQuantity(value), false)
+  for (const value of [-1, NaN, Infinity, 1_000_001, 0.001, 1e-10, 1.000000001]) assert.equal(validQuantity(value), false)
 })
 
 test('restocking uses exact hundredths and leaves the original food unchanged', () => {

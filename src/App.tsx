@@ -25,7 +25,7 @@ function App() {
     <main id="main" tabIndex={-1} className="mx-auto max-w-5xl space-y-7 px-5 py-8 sm:px-8 sm:py-10">
       {store.error && <div role="alert" className="space-y-3 rounded-lg border border-destructive/40 bg-card p-4"><p className="text-sm text-destructive">{store.error}</p><Button variant="outline" size="sm" onClick={store.reload}><RefreshCw />重新读取</Button></div>}
       <p role="status" className="sr-only">{store.message}</p>{store.message && <p aria-hidden="true" className="text-sm text-primary">{store.message}</p>}
-      {page === 'today' ? <TodayPage key={`today-${store.revision}-${requestedId}`} requestedId={requestedId} store={store} /> : page === 'history' ? <HistoryPage store={store} /> : page === 'meals' ? <CombinationsPage key={`meals-${store.revision}`} store={store} /> : <InventoryPage key={`inventory-${store.revision}`} store={store} />}
+      {page === 'today' ? <TodayPage key={`today-${store.revision}-${requestedId}`} requestedId={requestedId} store={store} /> : page === 'history' ? <HistoryPage key={`history-${store.revision}`} store={store} /> : page === 'meals' ? <CombinationsPage key={`meals-${store.revision}`} store={store} /> : <InventoryPage key={`inventory-${store.revision}`} store={store} />}
       <footer className="border-t pt-5 text-xs leading-6 text-muted-foreground">数据只保存在当前浏览器，刷新后仍在；不同设备不会同步，清除站点数据会丢失记录。</footer>
     </main>
   </>
