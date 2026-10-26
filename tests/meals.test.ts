@@ -45,3 +45,10 @@ test('recently eaten combinations receive lower weight without being excluded',(
  assert.equal(chooseMeal(eaten,undefined,()=>0.3)?.id,'other')
  assert.equal(chooseMeal(eaten,undefined,()=>0)?.id,'dinner')
 })
+
+test('ad-hoc meals can be recorded without creating or changing a saved combination',()=>{
+ const custom={...meal,id:'one-time',name:'今天随便搭一顿'}
+ const result=recordMeal(pantry,custom,custom.items,'custom-record',now)
+ assert.deepEqual(result.foods.map(food=>food.quantity),[6,4]);assert.deepEqual(result.combinations,pantry.combinations)
+ assert.equal(result.records[0].combinationId,'');assert.equal(result.records[0].name,'今天随便搭一顿')
+})

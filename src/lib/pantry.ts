@@ -83,7 +83,7 @@ export function recordMeal(pantry: Pantry, meal: Combination, items: MealItem[],
   validateCombination(actual)
   const reasons = availability(actual, pantry.foods)
   if (reasons.length) throw new Error(reasons.join('；'))
-  const record: MealRecord = { id: recordId, combinationId: meal.id, name: meal.name, eatenAt, items: items.map(item => ({ ...item, name: pantry.foods.find(food => food.id === item.foodId)!.name })) }
+  const record: MealRecord = { id: recordId, combinationId: pantry.combinations.some(value => value.id === meal.id) ? meal.id : '', name: meal.name, eatenAt, items: items.map(item => ({ ...item, name: pantry.foods.find(food => food.id === item.foodId)!.name })) }
   validateRecord(record)
   return { ...pantry, foods: pantry.foods.map(food => {
     const item = items.find(item => item.foodId === food.id)
