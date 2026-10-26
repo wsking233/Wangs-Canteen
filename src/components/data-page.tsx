@@ -99,7 +99,7 @@ export function DataPage({ store, theme }: { store: PantryStore; theme: ThemeSto
               type="file"
               accept=".json,.txt,application/json,text/plain"
               aria-label="选择备份文件"
-              className="sr-only"
+              className="hidden"
               onChange={async (event) => {
                 const file = event.target.files?.[0]
                 event.target.value = ''

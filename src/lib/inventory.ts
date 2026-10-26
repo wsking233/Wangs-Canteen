@@ -1,3 +1,4 @@
+import { validIdentifier } from './validation.ts'
 export const INVENTORY_KEY = 'wangs-canteen.inventory.v1'
 export const MAX_QUANTITY = 1_000_000
 
@@ -17,12 +18,10 @@ export interface Inventory {
 }
 
 export function validQuantity(value: number): boolean {
+  if (!Number.isFinite(value) || value < 0 || value > MAX_QUANTITY) return false
   const scaled = value * 100
   const rounded = Math.round(scaled)
   return (
-    Number.isFinite(value) &&
-    value >= 0 &&
-    value <= MAX_QUANTITY &&
     (value === 0 || rounded >= 1) &&
     Math.abs(scaled - rounded) <= Number.EPSILON * Math.max(1, Math.abs(scaled)) * 4
   )
@@ -31,8 +30,7 @@ export function validQuantity(value: number): boolean {
 export function validateFood(food: Food): void {
   if (
     !food ||
-    !food.id ||
-    typeof food.id !== 'string' ||
+    !validIdentifier(food.id) ||
     typeof food.name !== 'string' ||
     !food.name.trim() ||
     food.name.length > 40 ||

@@ -1,3 +1,4 @@
+import { validIdentifier, isTimestamp } from './validation.ts'
 import {
   INVENTORY_KEY,
   parseInventory,
@@ -37,20 +38,14 @@ export interface Pantry {
 export function validateRecord(record: MealRecord): void {
   if (
     !record ||
-    typeof record.eatenAt !== 'string' ||
-    !Number.isFinite(Date.parse(record.eatenAt)) ||
-    typeof record.combinationId !== 'string'
+    !validIdentifier(record.id) ||
+    !isTimestamp(record.eatenAt) ||
+    (record.combinationId !== '' && !validIdentifier(record.combinationId))
   )
     throw new Error('用餐记录格式不正确。')
-  if (
-    record.cancelledAt !== undefined &&
-    (typeof record.cancelledAt !== 'string' || !Number.isFinite(Date.parse(record.cancelledAt)))
-  )
+  if (record.cancelledAt !== undefined && !isTimestamp(record.cancelledAt))
     throw new Error('撤销时间格式不正确。')
-  if (
-    record.editedAt !== undefined &&
-    (typeof record.editedAt !== 'string' || !Number.isFinite(Date.parse(record.editedAt)))
-  )
+  if (record.editedAt !== undefined && !isTimestamp(record.editedAt))
     throw new Error('修改时间格式不正确。')
   validateCombination({ id: record.id, name: record.name, items: record.items })
   record.items.forEach((item) => {
@@ -60,10 +55,8 @@ export function validateRecord(record: MealRecord): void {
 }
 
 export function validateCombination(meal: Combination): void {
+  if (!meal || !validIdentifier(meal.id)) throw new Error('搭配标识包含无效字符或超过 128 字符。')
   if (
-    !meal ||
-    typeof meal.id !== 'string' ||
-    !meal.id ||
     typeof meal.name !== 'string' ||
     !meal.name.trim() ||
     meal.name.length > 60 ||
@@ -76,8 +69,7 @@ export function validateCombination(meal: Combination): void {
   for (const item of meal.items) {
     if (
       !item ||
-      typeof item.foodId !== 'string' ||
-      !item.foodId ||
+      !validIdentifier(item.foodId) ||
       !validQuantity(item.quantity) ||
       item.quantity === 0 ||
       typeof item.unit !== 'string' ||
