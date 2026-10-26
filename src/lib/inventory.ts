@@ -8,6 +8,7 @@ export interface Food {
   quantity: number
   enabled: boolean
   note: string
+  lowStockAt?: number
 }
 
 export interface Inventory {
@@ -22,9 +23,10 @@ export function validQuantity(value: number): boolean {
 }
 
 export function validateFood(food: Food): void {
-  if (!food.id || typeof food.id !== 'string' || typeof food.name !== 'string' || !food.name.trim() || food.name.length > 40 || typeof food.unit !== 'string' || !food.unit.trim() || food.unit.length > 8 || !validQuantity(food.quantity) || typeof food.enabled !== 'boolean' || typeof food.note !== 'string' || food.note.length > 200) {
+  if (!food || !food.id || typeof food.id !== 'string' || typeof food.name !== 'string' || !food.name.trim() || food.name.length > 40 || typeof food.unit !== 'string' || !food.unit.trim() || food.unit.length > 8 || !validQuantity(food.quantity) || typeof food.enabled !== 'boolean' || typeof food.note !== 'string' || food.note.length > 200) {
     throw new Error('请填写食物名称和单位，数量需为 0–1,000,000，最多两位小数。')
   }
+  if (food.lowStockAt !== undefined && !validQuantity(food.lowStockAt)) throw new Error('补货提醒线需为 0–1,000,000，最多两位小数。')
 }
 
 export function parseInventory(raw: string | null): Inventory {
@@ -53,4 +55,8 @@ export function saveInventory(storage: Pick<Storage, 'getItem' | 'setItem'>, pre
   if (storage.getItem(INVENTORY_KEY) !== previousRaw) throw new Error('库存已在其他页面更新，请重新读取后再操作。')
   storage.setItem(INVENTORY_KEY, raw)
   return raw
+}
+
+export function needsRestock(food: Food): boolean {
+  return food.enabled && food.quantity <= (food.lowStockAt ?? 0)
 }
