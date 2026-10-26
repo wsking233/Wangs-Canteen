@@ -16,8 +16,8 @@ export function CombinationsPage({ store }: { store: PantryStore }) {
   const opener = useRef<HTMLElement | null>(null)
   const addButton = useRef<HTMLButtonElement>(null)
   function open(next: Editor) { opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; store.clearError(); setEditor(next) }
-  function save(meal: Combination) {
-    const saved = store.commit(current => ({ ...current, combinations: current.combinations.some(item => item.id === meal.id) ? current.combinations.map(item => item.id === meal.id ? meal : item) : [...current.combinations, meal] }), `已保存「${meal.name}」。`)
+  async function save(meal: Combination) {
+    const saved = await store.commit(current => ({ ...current, combinations: current.combinations.some(item => item.id === meal.id) ? current.combinations.map(item => item.id === meal.id ? meal : item) : [...current.combinations, meal] }), `已保存「${meal.name}」。`)
     if (saved) setEditor(null)
     return saved
   }
@@ -32,11 +32,11 @@ export function CombinationsPage({ store }: { store: PantryStore }) {
         return <Card key={meal.id} aria-label={`搭配：${meal.name}`}><CardHeader><div className="flex items-start justify-between gap-3"><CardTitle className="min-w-0 break-words text-lg">{meal.name}</CardTitle><Badge variant={reasons.length ? 'outline' : 'secondary'} className="shrink-0">{reasons.length ? '待准备' : '库存足够'}</Badge></div></CardHeader><CardContent className="space-y-4"><ul className="space-y-2 text-sm">{meal.items.map(item => <li key={item.foodId} className="flex items-start justify-between gap-3"><span className="min-w-0 break-words">{pantry.foods.find(food => food.id === item.foodId)?.name ?? '已删除的食物'}</span><span className="shrink-0 text-muted-foreground">{item.quantity} {item.unit}</span></li>)}</ul>{reasons.length > 0 && <p className="rounded-lg bg-secondary p-3 text-xs leading-6 text-muted-foreground">{reasons.join('；')}</p>}<div className="flex flex-wrap gap-2">{!reasons.length && <Button asChild size="sm"><a href={`#today/${meal.id}`}>就吃这个</a></Button>}<Button size="sm" variant="outline" aria-label={`编辑搭配${meal.name}`} onClick={() => open({ kind: 'edit', meal })}><Pencil />编辑搭配</Button><Button size="sm" variant="ghost" className="ml-auto" aria-label={`删除搭配${meal.name}`} onClick={() => open({ kind: 'delete', meal })}><Trash2 /></Button></div></CardContent></Card>
       })}</div>}
     </>}
-    <Dialog open={editor !== null} onOpenChange={open => { if (!open) setEditor(null) }}><DialogContent className="max-h-[85dvh] overflow-y-auto" onCloseAutoFocus={event => { event.preventDefault(); (opener.current?.isConnected ? opener.current : addButton.current)?.focus() }}>
+    <Dialog open={editor !== null} onOpenChange={open => { if (!open && !store.pending) setEditor(null) }}><DialogContent showCloseButton={!store.pending} className="max-h-[85dvh] overflow-y-auto" onCloseAutoFocus={event => { event.preventDefault(); (opener.current?.isConnected ? opener.current : addButton.current)?.focus() }}>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {editor?.kind === 'add' && <CombinationForm foods={pantry.foods} onSave={save} onCancel={() => setEditor(null)} />}
       {editor?.kind === 'edit' && <CombinationForm key={editor.meal.id} meal={editor.meal} foods={pantry.foods} onSave={save} onCancel={() => setEditor(null)} />}
-      {editor?.kind === 'delete' && <><DialogHeader><DialogTitle>删除「{editor.meal.name}」？</DialogTitle><DialogDescription>只删除搭配，不会修改食物库存。</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setEditor(null)}>保留搭配</Button><Button variant="destructive" onClick={() => { if (store.commit(current => ({ ...current, combinations: current.combinations.filter(meal => meal.id !== editor.meal.id) }), '已删除搭配，库存保持不变。')) setEditor(null) }}>确认删除搭配</Button></DialogFooter></>}
+      {editor?.kind === 'delete' && <><DialogHeader><DialogTitle>删除「{editor.meal.name}」？</DialogTitle><DialogDescription>只删除搭配，不会修改食物库存。</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" disabled={store.pending} onClick={() => setEditor(null)}>保留搭配</Button><Button variant="destructive" disabled={store.pending} onClick={async () => { if (await store.commit(current => ({ ...current, combinations: current.combinations.filter(meal => meal.id !== editor.meal.id) }), '已删除搭配，库存保持不变。')) setEditor(null) }}>确认删除搭配</Button></DialogFooter></>}
     </DialogContent></Dialog>
   </>
 }

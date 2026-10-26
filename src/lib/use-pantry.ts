@@ -16,6 +16,8 @@ export function usePantry() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [revision, setRevision] = useState(0)
+  const [pending, setPending] = useState(false)
+  const saving = useRef(false)
   const reload = useCallback(() => {
     const next = read()
     current.current = next
@@ -31,19 +33,31 @@ export function usePantry() {
     return () => window.removeEventListener('storage', sync)
   }, [reload])
 
-  function write(update: (pantry: Pantry) => Pantry, feedback: string, recovery = false): boolean {
+  async function write(update: (pantry: Pantry) => Pantry, feedback: string, recovery = false): Promise<boolean> {
+    if (saving.current) return false
+    saving.current = true
+    setPending(true)
+    const expected = current.current
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10000)
     try {
-      if (current.current.error && !recovery) throw new Error('请先恢复读取数据，再进行修改。')
-      const pantry = update(current.current.pantry)
-      const raw = savePantry(localStorage, current.current.raw, pantry)
-      const next = { pantry, raw, error: '' }
-      current.current = next
-      setSnapshot(next)
-      setMessage(feedback)
-      setError('')
-      return true
-    } catch (error) { setMessage(''); setError(error instanceof Error ? error.message : '保存失败，请检查浏览器存储权限。'); return false }
+      const persist = () => {
+        if (expected.error && !recovery) throw new Error('请先恢复读取数据，再进行修改。')
+        if (current.current.raw !== expected.raw) throw new Error('等待保存期间数据已更新，请检查最新内容后重试。')
+        const pantry = update(expected.pantry)
+        const raw = savePantry(localStorage, expected.raw, pantry)
+        const next = { pantry, raw, error: '' }
+        current.current = next
+        setSnapshot(next)
+        setMessage(feedback)
+        setError('')
+        return true
+      }
+      return navigator.locks ? await navigator.locks.request(`${PANTRY_KEY}.write`, { signal: controller.signal }, persist) : persist()
+    } catch (error) { setMessage(''); setError(controller.signal.aborted ? '等待其他页面保存超时，请重试或关闭未完成保存的页面。' : error instanceof Error ? error.message : '保存失败，请检查浏览器存储权限。'); return false }
+    finally { clearTimeout(timeout); saving.current = false; setPending(false) }
   }
-  return { pantry: snapshot.pantry, blocked: Boolean(snapshot.error), error: snapshot.error || error, message, revision, reload, commit: (update: (pantry: Pantry) => Pantry, feedback: string) => write(update, feedback), restore: (pantry: Pantry) => write(() => pantry, '备份已导入，本机数据已替换。', true), clearError: () => setError('') }
+
+  return { pantry: snapshot.pantry, blocked: Boolean(snapshot.error), error: snapshot.error || error, message, revision, pending, reload, commit: (update: (pantry: Pantry) => Pantry, feedback: string) => write(update, feedback), restore: (pantry: Pantry) => write(() => pantry, '备份已导入，本机数据已替换。', true), clearError: () => setError('') }
 }
 export type PantryStore = ReturnType<typeof usePantry>

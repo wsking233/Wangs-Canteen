@@ -25,8 +25,8 @@ export function InventoryPage({ store }: { store: PantryStore }) {
   }
 
 
-  function commit(update: (foods: Food[]) => Food[], feedback: string) {
-    const saved = store.commit(current => ({ ...current, foods: update(current.foods) }), feedback)
+  async function commit(update: (foods: Food[]) => Food[], feedback: string) {
+    const saved = await store.commit(current => ({ ...current, foods: update(current.foods) }), feedback)
     if (saved) setEditor(null)
     return saved
   }
@@ -50,7 +50,7 @@ export function InventoryPage({ store }: { store: PantryStore }) {
           <CardContent className="space-y-4"><p className="text-3xl font-semibold tracking-tight">{food.quantity}<span className="ml-2 text-sm font-normal text-muted-foreground">{food.unit}</span></p><div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => openEditor({ kind: 'restock', food })}><Plus aria-hidden="true" />补货</Button><Button size="sm" variant="ghost" aria-label={`编辑${food.name}`} onClick={() => openEditor({ kind: 'edit', food })}><Pencil aria-hidden="true" />编辑</Button><Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" aria-label={`删除${food.name}`} onClick={() => openEditor({ kind: 'delete', food })}><Trash2 aria-hidden="true" /></Button></div></CardContent>
         </Card>)}</div>}
       </section>}
-    <Dialog open={editor !== null} onOpenChange={open => { if (!open) setEditor(null) }}><DialogContent className="max-h-[85dvh] overflow-y-auto" onCloseAutoFocus={event => { event.preventDefault(); (opener.current?.isConnected ? opener.current : addButton.current)?.focus() }}>
+    <Dialog open={editor !== null} onOpenChange={open => { if (!open && !store.pending) setEditor(null) }}><DialogContent showCloseButton={!store.pending} className="max-h-[85dvh] overflow-y-auto" onCloseAutoFocus={event => { event.preventDefault(); (opener.current?.isConnected ? opener.current : addButton.current)?.focus() }}>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {editor?.kind === 'add' && <FoodForm key="add" onCancel={() => setEditor(null)} onSave={food => commit(foods => [...foods, food], `已添加${food.name}。`)} />}
       {editor?.kind === 'edit' && <FoodForm key={editor.food.id} food={editor.food} onCancel={() => setEditor(null)} onSave={food => commit(foods => foods.map(item => item.id === food.id ? food : item), `已更新${food.name}。`)} />}
@@ -62,7 +62,7 @@ export function InventoryPage({ store }: { store: PantryStore }) {
           return foods.map(item => item.id === food.id ? updated : item)
         }, `已为${editor.food.name}补货 ${amount} ${editor.food.unit}。`)
       }} />}
-      {editor?.kind === 'delete' && <><DialogHeader><DialogTitle>删除{editor.food.name}？</DialogTitle><DialogDescription>将移除这项食物及其库存，无法撤销。如果只是暂时不吃，可以在编辑中停用。</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setEditor(null)}>保留食物</Button><Button variant="destructive" onClick={() => commit(foods => foods.filter(food => food.id !== editor.food.id), `已删除${editor.food.name}。`)}>确认删除</Button></DialogFooter></>}
+      {editor?.kind === 'delete' && <><DialogHeader><DialogTitle>删除{editor.food.name}？</DialogTitle><DialogDescription>将移除这项食物及其库存，无法撤销。如果只是暂时不吃，可以在编辑中停用。</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" disabled={store.pending} onClick={() => setEditor(null)}>保留食物</Button><Button variant="destructive" disabled={store.pending} onClick={async () => commit(foods => foods.filter(food => food.id !== editor.food.id), `已删除${editor.food.name}。`)}>确认删除</Button></DialogFooter></>}
     </DialogContent></Dialog>
   </>
 }

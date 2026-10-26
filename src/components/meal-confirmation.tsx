@@ -11,9 +11,9 @@ export function MealConfirmation({ meal, store, onClose, onSaved }: { meal: Comb
   const [recordId] = useState(() => crypto.randomUUID())
   const [failed, setFailed] = useState(false)
   const reasons = availability({ ...meal, items }, store.pantry.foods)
-  return <form className="space-y-5" onSubmit={event => {
+  return <form className="space-y-5" onSubmit={async event => {
     event.preventDefault()
-    const saved = store.commit(current => recordMeal(current, meal, items, recordId, new Date().toISOString()), `已记录「${meal.name}」，库存已扣减。`)
+    const saved = await store.commit(current => recordMeal(current, meal, items, recordId, new Date().toISOString()), `已记录「${meal.name}」，库存已扣减。`)
     setFailed(!saved)
     if (saved) onSaved()
   }}>
@@ -24,6 +24,6 @@ export function MealConfirmation({ meal, store, onClose, onSaved }: { meal: Comb
     })}</div>
     {reasons.length > 0 && <p role="alert" className="text-sm text-destructive">{reasons.join('；')}</p>}
     {failed && store.error && <p role="alert" className="text-sm text-destructive">{store.error}</p>}
-    <DialogFooter><Button type="button" variant="outline" onClick={onClose}>先不吃</Button><Button type="submit" disabled={store.blocked || reasons.length > 0}>确认开饭</Button></DialogFooter>
+    <DialogFooter><Button type="button" variant="outline" disabled={store.pending} onClick={onClose}>先不吃</Button><Button type="submit" disabled={store.pending || store.blocked || reasons.length > 0}>{store.pending ? '正在记录…' : '确认开饭'}</Button></DialogFooter>
   </form>
 }
