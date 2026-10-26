@@ -1,7 +1,7 @@
 # 小王食堂开发约定
 
 - 使用 Node.js 22（最低 22.12）、npm、React、TypeScript、Vite。
-- 当前范围仅为移动端优先的静态欢迎页；未经明确要求不要增加库存、点餐等业务功能，也不要添加后端、数据库、认证或复杂架构。
+- 当前阶段已授权实现移动端优先的食物库存管理，数据保存在 localStorage；继续复用现有 UI。下一阶段再实现餐食搭配、推荐与用餐扣减，不引入后端、数据库、认证或复杂架构。
 - 首次准备 Cloud 环境：`source scripts/cloud-setup.sh`。后续独立 shell 若默认不是 Node 22，先执行该命令或 `nvm use`。
 - 安装依赖用 `npm ci`；主动调整依赖时用 `npm install`，同时提交 package-lock.json。
 - 开发服务：`npm run dev`，访问 `/Wangs-Canteen/`；提交前运行 `npm run build`。
