@@ -19,3 +19,11 @@
 - Cloud 运行时状态工具报告环境已连接，但网络策略状态为 `unknown`；上述安装与启动结果来自实际命令验证。
 - 当前可用 Cloud 工具仅支持查询，没有修改、测试草稿或发布环境配置的接口。可复用安装脚本已验证；**Cloud 平台配置尚未发布**，需要用户在环境界面填写 README 中的设置并测试、发布。
 - Pages 工作流的云端运行、仓库 Pages 设置和公开站点上线，需以 GitHub 的实际部署结果为准；本地构建通过不代表站点已上线。
+
+## UI 基础与 CI/CD 更新验证
+
+- 按用户要求接入 Tailwind CSS v4、shadcn/ui 与统一主题，业务功能暂不开发。
+- 使用 Node.js v22.23.4 执行 `npm ci --include=dev` 和 `npm run check` 通过（Oxlint、TypeScript、Vite 生产构建）。
+- 构建输出的脚本和样式地址均使用 `/Wangs-Canteen/assets/`，与项目 Pages 路径一致。
+- Pages 工作流：PR 仅检查；main 推送或手动运行检查通过后上传并部署；部署权限仅在 deploy job 中启用。
+- Pages 云端运行与站点可用性需继续以 GitHub 实际结果为准。
