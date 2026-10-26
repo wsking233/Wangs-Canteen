@@ -3,7 +3,20 @@ import { INVENTORY_KEY, parseInventory, validateFood, validQuantity, type Food }
 export { INVENTORY_KEY as PANTRY_KEY }
 export interface MealItem { foodId: string; quantity: number; unit: string }
 export interface Combination { id: string; name: string; items: MealItem[] }
-export interface Pantry { version: 2; foods: Food[]; combinations: Combination[] }
+export interface MealRecord {
+  id: string
+  combinationId: string
+  name: string
+  eatenAt: string
+  items: { foodId: string; name: string; quantity: number; unit: string }[]
+}
+export interface Pantry { version: 3; foods: Food[]; combinations: Combination[]; records: MealRecord[] }
+
+export function validateRecord(record: MealRecord): void {
+  if (!record || typeof record.eatenAt !== 'string' || !Number.isFinite(Date.parse(record.eatenAt)) || typeof record.combinationId !== 'string') throw new Error('用餐记录格式不正确。')
+  validateCombination({ id: record.id, name: record.name, items: record.items })
+  record.items.forEach(item => { if (typeof item.name !== 'string' || !item.name.trim() || item.name.length > 40) throw new Error('用餐记录缺少食物名称。') })
+}
 
 export function validateCombination(meal: Combination): void {
   if (!meal || typeof meal.id !== 'string' || !meal.id || typeof meal.name !== 'string' || !meal.name.trim() || meal.name.length > 60 || !Array.isArray(meal.items) || meal.items.length === 0 || meal.items.length > 50) throw new Error('请为搭配命名，并选择至少一种食物。')
@@ -15,14 +28,20 @@ export function validateCombination(meal: Combination): void {
 }
 
 export function parsePantry(raw: string | null): Pantry {
-  if (raw === null) return { version: 2, foods: [], combinations: [] }
-  const data = JSON.parse(raw) as Pantry | { version: 1 }
-  if (data?.version === 1) return { version: 2, foods: parseInventory(raw).foods, combinations: [] }
-  if (!data || data.version !== 2 || !Array.isArray(data.foods) || !Array.isArray(data.combinations)) throw new Error('本机数据版本或格式不受支持，请先备份原始数据。')
+  if (raw === null) return { version: 3, foods: [], combinations: [], records: [] }
+  const data = JSON.parse(raw)
+  if (data?.version === 1) return { version: 3, foods: parseInventory(raw).foods, combinations: [], records: [] }
+  if (!data || ![2, 3].includes(data.version) || !Array.isArray(data.foods) || !Array.isArray(data.combinations)) throw new Error('本机数据版本或格式不受支持，请先备份原始数据。')
   data.foods.forEach(validateFood)
   data.combinations.forEach(validateCombination)
-  if (new Set(data.foods.map(food => food.id)).size !== data.foods.length || new Set(data.combinations.map(meal => meal.id)).size !== data.combinations.length) throw new Error('本机数据包含重复标识。')
-  return data
+  const records: MealRecord[] = data.version === 2 ? [] : data.records
+  if (!Array.isArray(records)) throw new Error('用餐记录格式不正确。')
+  records.forEach(validateRecord)
+  const pantry: Pantry = { version: 3, foods: data.foods, combinations: data.combinations, records }
+  for (const items of [pantry.foods, pantry.combinations, pantry.records]) {
+    if (new Set(items.map(item => item.id)).size !== items.length) throw new Error('本机数据包含重复标识。')
+  }
+  return pantry
 }
 
 export function availability(meal: Combination, foods: Food[]): string[] {
@@ -42,4 +61,25 @@ export function savePantry(storage: Pick<Storage, 'getItem' | 'setItem'>, previo
   if (storage.getItem(INVENTORY_KEY) !== previousRaw) throw new Error('数据已在其他页面更新，请重新读取后再操作。')
   storage.setItem(INVENTORY_KEY, raw)
   return raw
+}
+
+export function chooseMeal(pantry: Pantry, previousId?: string, random: () => number = Math.random): Combination | null {
+  const available = pantry.combinations.filter(meal => !availability(meal, pantry.foods).length)
+  const alternatives = available.filter(meal => meal.id !== previousId)
+  const candidates = alternatives.length ? alternatives : available
+  return candidates.length ? candidates[Math.min(candidates.length - 1, Math.max(0, Math.floor(random() * candidates.length)))] : null
+}
+
+export function recordMeal(pantry: Pantry, meal: Combination, items: MealItem[], recordId: string, eatenAt: string): Pantry {
+  if (pantry.records.some(record => record.id === recordId)) throw new Error('这次用餐已记录，请勿重复确认。')
+  const actual = { ...meal, items }
+  validateCombination(actual)
+  const reasons = availability(actual, pantry.foods)
+  if (reasons.length) throw new Error(reasons.join('；'))
+  const record: MealRecord = { id: recordId, combinationId: meal.id, name: meal.name, eatenAt, items: items.map(item => ({ ...item, name: pantry.foods.find(food => food.id === item.foodId)!.name })) }
+  validateRecord(record)
+  return { ...pantry, foods: pantry.foods.map(food => {
+    const item = items.find(item => item.foodId === food.id)
+    return item ? { ...food, quantity: (Math.round(food.quantity * 100) - Math.round(item.quantity * 100)) / 100 } : food
+  }), records: [record, ...pantry.records] }
 }

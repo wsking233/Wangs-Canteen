@@ -6,12 +6,12 @@ const foods = [
  { id: 'pasta', name: '意面', unit: '份', quantity: 5, enabled: true, note: '' },
 ]
 const meal: Combination = { id: 'dinner', name: '炸鸡配意面', items: [{ foodId: 'chicken', quantity: 2, unit: '块' }, { foodId: 'pasta', quantity: 0.5, unit: '份' }] }
-const pantry: Pantry = { version: 2, foods, combinations: [meal] }
+const pantry: Pantry = { version: 3, foods, combinations: [meal], records: [] }
 
 test('upgrades v1 inventory in memory without changing food IDs or amounts', () => {
  const result = parsePantry(JSON.stringify({ version: 1, foods }))
- assert.equal(result.version, 2); assert.deepEqual(result.foods, foods); assert.deepEqual(result.combinations, [])
- assert.deepEqual(parsePantry(null), { version: 2, foods: [], combinations: [] })
+ assert.equal(result.version, 3); assert.deepEqual(result.foods, foods); assert.deepEqual(result.combinations, [])
+ assert.deepEqual(parsePantry(null), { version: 3, foods: [], combinations: [], records: [] })
 })
 test('round-trips combinations and reports stock availability precisely', () => {
  assert.deepEqual(parsePantry(JSON.stringify(pantry)), pantry)
@@ -31,4 +31,9 @@ test('saves the full snapshot, refuses stale writes, and preserves old data on s
  const previous=raw; savePantry(storage, previous, pantry); assert.deepEqual(parsePantry(raw), pantry)
  assert.throws(()=>savePantry(storage, previous, {...pantry, foods: []}), /其他页面/)
  const saved=raw; assert.throws(()=>savePantry({...storage,setItem:()=>{throw new Error('quota')}},raw,{...pantry,combinations:[]}), /quota/);assert.equal(raw,saved)
+})
+
+test('v2 combinations upgrade without dropping food or item quantities', () => {
+ const result=parsePantry(JSON.stringify({version:2,foods,combinations:[meal]}))
+ assert.equal(result.version,3);assert.deepEqual(result.combinations,[meal]);assert.deepEqual(result.records,[])
 })

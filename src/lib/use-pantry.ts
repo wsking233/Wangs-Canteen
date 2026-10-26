@@ -6,7 +6,7 @@ function read(): Snapshot {
   try {
     const raw = localStorage.getItem(PANTRY_KEY)
     return { pantry: parsePantry(raw), raw, error: '' }
-  } catch { return { pantry: { version: 2, foods: [], combinations: [] }, raw: null, error: '无法读取本机数据，可能是浏览器存储不可用或已有数据损坏。原数据未被覆盖，请保留站点数据并重新读取。' } }
+  } catch { return { pantry: { version: 3, foods: [], combinations: [], records: [] }, raw: null, error: '无法读取本机数据，可能是浏览器存储不可用或已有数据损坏。原数据未被覆盖，请保留站点数据并重新读取。' } }
 }
 
 export function usePantry() {
