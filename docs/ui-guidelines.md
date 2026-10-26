@@ -22,7 +22,7 @@
 - [Tailwind 的 Vite 集成](https://tailwindcss.com/docs/installation/using-vite)
 - [Lucide](https://lucide.dev/)
 
-现有七个组件于 2026-10-26 从 [官方 New York v4 源码](https://github.com/shadcn-ui/ui/tree/main/apps/v4/registry/new-york-v4/ui) 引入，保留官方样式和交互，只将 `cn` 与内部 Button 导入路径改为本项目别名。许可证位于 `vendor/shadcn-ui/LICENSE`。这些是引入时的源码副本，不会自动跟随上游 main 更新。
+现有七个组件于 2026-10-26 从 [官方 New York v4 源码](https://github.com/shadcn-ui/ui/tree/main/apps/v4/registry/new-york-v4/ui) 引入，沿用官方样式和交互，调整 `cn` 与内部 Button 导入路径；项目适配还包括 Dialog 中文关闭文案、长文本换行与可收缩单列、Card 最小宽度、Label 多行行高。许可证位于 `vendor/shadcn-ui/LICENSE`。这些是引入时的源码副本，不会自动跟随上游 main 更新。
 
 ## 文件职责
 

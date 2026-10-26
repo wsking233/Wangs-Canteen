@@ -39,7 +39,7 @@ test('simultaneous tabs create one meal and perform only one refund', async ({ p
   for (const tab of [page, other]) {
     await tab.goto('#history')
     await tab.reload()
-    await tab.getByRole('button', { name: '撤销用餐炸鸡配意面', exact: true }).click()
+    await tab.getByRole('button', { name: '撤销这顿：炸鸡配意面', exact: true }).click()
   }
   await hold()
   for (const tab of [page, other]) await tab.getByRole('button', { name: '确认撤销并返还', exact: true }).click()

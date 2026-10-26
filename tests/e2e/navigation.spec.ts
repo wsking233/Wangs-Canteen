@@ -21,3 +21,22 @@ test('phone navigation stays reachable and route changes expose the current page
   await page.goto('#invalid-route')
   await expect(page).toHaveTitle('今天吃什么 · 小王食堂')
 })
+
+
+test('keyboard focus stays in the food editor and returns to its trigger', async ({ page }) => {
+  await page.goto('#inventory')
+  const trigger = page.getByRole('button', { name: '添加食物', exact: true })
+  await trigger.click()
+  await expect(page.getByLabel('食物名称', { exact: true })).toBeFocused()
+  for (let i = 0; i < 14; i++) {
+    await page.keyboard.press('Tab')
+    expect(await page.evaluate(() => Boolean(document.activeElement?.closest('[role="dialog"]')))).toBe(true)
+  }
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press('Shift+Tab')
+    expect(await page.evaluate(() => Boolean(document.activeElement?.closest('[role="dialog"]')))).toBe(true)
+  }
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toBeHidden()
+  await expect(trigger).toBeFocused()
+})

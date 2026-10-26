@@ -30,7 +30,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-测试使用独立浏览器上下文和生产预览端口 4174，覆盖库存、常用搭配、推荐/开饭/撤销、备份恢复、并发保存、存储失败、主题和四种宽度。若环境已有 Chromium，可设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium`。CI 自动安装 Chromium 并在上传 Pages 产物前运行这些测试；失败时保留诊断文件 7 天。
+测试使用独立浏览器上下文和生产预览端口 4174，覆盖库存、常用搭配、推荐/开饭/撤销、记录修正、备份恢复、并发保存、存储失败、主题和四种宽度，以及长文本、键盘弹窗和两套主题的自动可访问性规则。若环境已有 Chromium，可设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium`。CI 自动安装 Chromium 并在上传 Pages 产物前运行这些测试；失败时保留诊断文件 7 天。
 
 ## 项目文档
 
