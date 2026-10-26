@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: pages-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -27,8 +27,16 @@ jobs:
           cache: npm
       - run: npm ci --include=dev
       - run: npm run check
-      - name: Install Chromium for browser checks
-        run: npx playwright install --with-deps chromium
+      - name: Select available browser for production checks
+        shell: bash
+        run: |
+          pantry_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [[ -n "$pantry_browser_path" ]]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$pantry_browser_path" >> "$GITHUB_ENV"
+            "$pantry_browser_path" --version
+          else
+            npx playwright install --with-deps chromium
+          fi
       - name: Verify production UI flows
         run: npx playwright test
       - name: Upload browser diagnostics on failure
