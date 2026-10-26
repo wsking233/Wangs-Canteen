@@ -9,6 +9,7 @@ export interface MealRecord {
   name: string
   eatenAt: string
   cancelledAt?: string
+  editedAt?: string
   items: { foodId: string; name: string; quantity: number; unit: string }[]
 }
 export interface Pantry { version: 3; foods: Food[]; combinations: Combination[]; records: MealRecord[] }
@@ -16,6 +17,7 @@ export interface Pantry { version: 3; foods: Food[]; combinations: Combination[]
 export function validateRecord(record: MealRecord): void {
   if (!record || typeof record.eatenAt !== 'string' || !Number.isFinite(Date.parse(record.eatenAt)) || typeof record.combinationId !== 'string') throw new Error('用餐记录格式不正确。')
   if (record.cancelledAt !== undefined && (typeof record.cancelledAt !== 'string' || !Number.isFinite(Date.parse(record.cancelledAt)))) throw new Error('撤销时间格式不正确。')
+  if (record.editedAt !== undefined && (typeof record.editedAt !== 'string' || !Number.isFinite(Date.parse(record.editedAt)))) throw new Error('修改时间格式不正确。')
   validateCombination({ id: record.id, name: record.name, items: record.items })
   record.items.forEach(item => { if (typeof item.name !== 'string' || !item.name.trim() || item.name.length > 40) throw new Error('用餐记录缺少食物名称。') })
 }
@@ -110,4 +112,28 @@ export function cancelMeal(pantry: Pantry, recordId: string, cancelledAt: string
     }
   }
   return { ...pantry, foods, records: pantry.records.map(item => item.id === recordId ? cancelled : item) }
+}
+
+export function editMeal(pantry: Pantry, recordId: string, change: { name: string; eatenAt: string; items: MealItem[] }, editedAt: string): Pantry {
+  const record = pantry.records.find(record => record.id === recordId)
+  if (!record) throw new Error('用餐记录已不存在。')
+  if (record.cancelledAt) throw new Error('已撤销的记录不能修改，请重新记录一顿饭。')
+  validateCombination({ id: record.id, name: change.name, items: change.items })
+  if (change.items.some(item => !record.items.some(original => original.foodId === item.foodId && original.unit === item.unit))) throw new Error('只能调整原记录中的食物用量，不能变更单位。')
+  const updated: MealRecord = { ...record, name: change.name, eatenAt: change.eatenAt, editedAt, items: change.items.map(item => ({ ...item, name: record.items.find(original => original.foodId === item.foodId)!.name })) }
+  validateRecord(updated)
+  const foods = [...pantry.foods]
+  for (const original of record.items) {
+    const amount = change.items.find(item => item.foodId === original.foodId)?.quantity ?? 0
+    const delta = Math.round(original.quantity * 100) - Math.round(amount * 100)
+    if (delta === 0) continue
+    const index = foods.findIndex(food => food.id === original.foodId)
+    const food = foods[index]
+    if (food && food.unit !== original.unit) throw new Error(`${original.name}的库存单位已修改，调整用量前请先改回${original.unit}。`)
+    const quantity = (Math.round((food?.quantity ?? 0) * 100) + delta) / 100
+    if (!validQuantity(quantity)) throw new Error(`${original.name}调整后库存不足或超过数量上限，请先检查库存。`)
+    if (food) foods[index] = { ...food, quantity }
+    else if (quantity > 0) foods.push({ id: original.foodId, name: original.name, unit: original.unit, quantity, enabled: true, note: '由修正用餐记录恢复' })
+  }
+  return { ...pantry, foods, records: pantry.records.map(value => value.id === recordId ? updated : value) }
 }
