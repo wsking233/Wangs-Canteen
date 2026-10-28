@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { CombinationForm } from './combination-form'
 import { MealConfirmation } from './meal-confirmation'
-import { availability, chooseMeal, type Combination } from '@/lib/pantry'
+import { availability, chooseMeal, recordMeal, type Combination } from '@/lib/pantry'
 import { needsRestock } from '@/lib/inventory'
 import type { PantryStore } from '@/lib/use-pantry'
 
@@ -16,10 +16,17 @@ export function TodayPage({ store, requestedId }: { store: PantryStore; requeste
   )
   const [confirm, setConfirm] = useState<Combination | null>(null)
   const [building, setBuilding] = useState(false)
-  const [draft, setDraft] = useState<Combination | undefined>()
+  const [recordId, setRecordId] = useState(() => crypto.randomUUID())
   const builderTrigger = useRef<HTMLButtonElement>(null)
   const [custom, setCustom] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
+  const canBuild = store.pantry.foods.some((food) => food.enabled && food.quantity > 0)
+  function openBuilder() {
+    store.clearError()
+    setRecordId(crypto.randomUUID())
+    setCustom(true)
+    setBuilding(true)
+  }
   const lowStock = store.pantry.foods.filter(needsRestock).length
   const ready = store.pantry.combinations.filter(
     (meal) => !availability(meal, store.pantry.foods).length,
@@ -47,22 +54,17 @@ export function TodayPage({ store, requestedId }: { store: PantryStore; requeste
             会参考最近 3 顿，尽量换着吃。也可以到常用搭配里，主动选择喜欢的那一顿。
           </p>
         </div>
-        <Button
-          ref={builderTrigger}
-          variant="outline"
-          disabled={
-            store.blocked || !store.pantry.foods.some((food) => food.enabled && food.quantity > 0)
-          }
-          onClick={() => {
-            store.clearError()
-            setDraft(undefined)
-            setCustom(true)
-            setBuilding(true)
-          }}
-        >
-          <Plus />
-          自己搭一顿
-        </Button>
+        {selected && (
+          <Button
+            ref={builderTrigger}
+            variant="outline"
+            disabled={store.blocked || !canBuild}
+            onClick={openBuilder}
+          >
+            <Plus />
+            自己搭一顿
+          </Button>
+        )}
       </section>
       {!store.blocked && selected ? (
         <Card role="group" className="overflow-hidden border-primary/20" aria-label="今日推荐">
@@ -126,23 +128,32 @@ export function TodayPage({ store, requestedId }: { store: PantryStore; requeste
               <h2 className="text-xl font-semibold">
                 {!store.pantry.foods.length
                   ? '先看看家里有什么'
-                  : !store.pantry.combinations.length
-                    ? '把喜欢的食物搭在一起'
-                    : '先补一点食物，再开饭'}
+                  : !canBuild
+                    ? '先补一点食物，再开饭'
+                    : '用现有食物搭一顿'}
               </h2>
               <p className="text-sm leading-6 text-muted-foreground">
                 {!store.pantry.foods.length
-                  ? '记下已有食物，再保存一两个常用搭配，就能开始推荐。'
-                  : !store.pantry.combinations.length
-                    ? '可以保存常用搭配，也可以直接点“自己搭一顿”，临时决定这一餐。'
-                    : '现在没有库存足够的搭配。去常用搭配查看缺少什么，补货或调整用量。'}
+                  ? '先添加家里已有的食物，就可以直接搭一顿饭。'
+                  : !canBuild
+                    ? '现在没有可用食物，先去库存补货或启用食物。'
+                    : !store.pantry.combinations.length
+                      ? '不用先建常用搭配，选几样已有食物就能开饭。'
+                      : '常用搭配暂时缺少食物，可以用现有库存直接搭一顿。'}
               </p>
-              <Button asChild>
-                <a href={!store.pantry.foods.length ? '#inventory' : '#meals'}>
-                  {!store.pantry.foods.length ? '添加家中食物' : '去常用搭配'}
-                  <ArrowRight />
-                </a>
-              </Button>
+              {canBuild ? (
+                <Button ref={builderTrigger} onClick={openBuilder}>
+                  <Plus />
+                  自己搭一顿
+                </Button>
+              ) : (
+                <Button asChild>
+                  <a href="#inventory">
+                    {!store.pantry.foods.length ? '添加家中食物' : '去库存补货'}
+                    <ArrowRight />
+                  </a>
+                </Button>
+              )}
             </CardContent>
           </Card>
         )
@@ -190,14 +201,21 @@ export function TodayPage({ store, requestedId }: { store: PantryStore; requeste
           {building ? (
             <CombinationForm
               mode="eat"
-              meal={draft}
               foods={store.pantry.foods}
+              pending={store.pending}
+              saveError={store.error}
               onCancel={() => setBuilding(false)}
               onSave={async (meal) => {
-                setDraft(meal)
-                setBuilding(false)
-                setConfirm(meal)
-                return true
+                const saved = await store.commit(
+                  (pantry) =>
+                    recordMeal(pantry, meal, meal.items, recordId, new Date().toISOString()),
+                  `已记录「${meal.name}」，库存已扣减。`,
+                )
+                if (saved) {
+                  setBuilding(false)
+                  setSelectedId(chooseMeal(store.pantry)?.id ?? '')
+                }
+                return saved
               }}
             />
           ) : (
@@ -207,18 +225,8 @@ export function TodayPage({ store, requestedId }: { store: PantryStore; requeste
                 meal={confirm}
                 store={store}
                 onClose={() => setConfirm(null)}
-                onBack={
-                  custom
-                    ? (items) => {
-                        setDraft({ ...confirm, items })
-                        setConfirm(null)
-                        setBuilding(true)
-                      }
-                    : undefined
-                }
                 onSaved={() => {
                   setConfirm(null)
-                  setDraft(undefined)
                   setSelectedId(chooseMeal(store.pantry, confirm.id)?.id ?? '')
                 }}
               />

@@ -13,9 +13,13 @@ export function CombinationForm({
   onSave,
   onCancel,
   mode = 'save',
+  pending = false,
+  saveError = '',
 }: {
   meal?: Combination
   mode?: 'save' | 'eat'
+  pending?: boolean
+  saveError?: string
   foods: Food[]
   onSave: (meal: Combination) => Promise<boolean>
   onCancel: () => void
@@ -24,7 +28,8 @@ export function CombinationForm({
   const [items, setItems] = useState<MealItem[]>(meal?.items ?? [])
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [saving, setBusy] = useState(false)
+  const busy = saving || pending
   const reasons = items.length ? availability({ id: 'draft', name: 'draft', items }, foods) : []
 
   return (
@@ -70,14 +75,14 @@ export function CombinationForm({
         </DialogTitle>
         <DialogDescription>
           {mode === 'eat'
-            ? '选择现在想吃的食物，不必保存为常用搭配。下一步确认后才会扣减库存。'
+            ? '选择食物并调整本次用量，点击“确认开饭”后记录并扣减库存，不会新增常用搭配。'
             : '选几样食物，填写这一顿各吃多少。库存不足时也能先保存，补货后再用。'}
         </DialogDescription>
       </DialogHeader>
       <div className="space-y-2">
         <Label htmlFor="meal-name">{mode === 'eat' ? '这顿叫什么（选填）' : '搭配名称'}</Label>
         <Input
-          autoFocus
+          autoFocus={mode === 'save'}
           disabled={busy}
           id="meal-name"
           required={mode === 'save'}
@@ -157,6 +162,7 @@ export function CombinationForm({
       <div className="space-y-3">
         <Label htmlFor="meal-food-search">从库存添加</Label>
         <Input
+          autoFocus={mode === 'eat'}
           disabled={busy}
           id="meal-food-search"
           value={query}
@@ -179,7 +185,14 @@ export function CombinationForm({
                 className="h-auto w-full justify-between whitespace-normal text-left"
                 disabled={busy || items.length >= 50}
                 onClick={() =>
-                  setItems([...items, { foodId: food.id, quantity: 1, unit: food.unit }])
+                  setItems([
+                    ...items,
+                    {
+                      foodId: food.id,
+                      quantity: mode === 'eat' ? Math.min(1, food.quantity) : 1,
+                      unit: food.unit,
+                    },
+                  ])
                 }
               >
                 <span className="min-w-0 wrap-anywhere">
@@ -206,9 +219,9 @@ export function CombinationForm({
           {mode === 'eat' ? '调整用量或先补货，再继续确认。' : '可以先保存，稍后补货或调整。'}
         </div>
       )}
-      {error && (
+      {(error || saveError) && (
         <p role="alert" className="text-sm text-destructive">
-          {error}
+          {saveError || error}
         </p>
       )}
       <DialogFooter>
@@ -219,7 +232,7 @@ export function CombinationForm({
           type="submit"
           disabled={busy || !items.length || (mode === 'eat' && reasons.length > 0)}
         >
-          {busy ? '正在处理…' : mode === 'eat' ? '确认本次搭配' : '保存搭配'}
+          {busy ? '正在处理…' : mode === 'eat' ? '确认开饭' : '保存搭配'}
         </Button>
       </DialogFooter>
     </form>
